@@ -16,6 +16,6 @@ chatmanager.staff.reload - Access to the command to reload the plugin. \
 chatmanager.staff.bypassignore - Bypass ignoring another player. \
 chatmanager.staff.spy - Viewing messages that would not be visible under normal conditions. For example, local. Also, you can see the original message before various changes by the plugin.
 
-##### Commands
+##### Commands:
 /chatreload - Reload plugin. \
 /chatignore - Ignore other player.
