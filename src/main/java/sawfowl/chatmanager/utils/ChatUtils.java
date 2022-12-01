@@ -18,8 +18,6 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import sawfowl.chatmanager.Permissions;
 import sawfowl.chatmanager.configure.Locales;
 import sawfowl.chatmanager.configure.ReplaceKeys;
@@ -38,7 +36,8 @@ public class ChatUtils {
 	private static final char[] delimiters = {'.', '!', '?', ';'};
 
 	public static final char firstSymbol(Component component) {
-		return TextUtils.clearDecorations(component).charAt(0);
+		String string = TextUtils.clearDecorations(component);
+		return string.length() == 0 ? '-' : string.charAt(0);
 	}
 
 	public static final Predicate<Audience> getLocalFilter(ServerWorld world, Vector3i vector3i, Chanel chanel) {
@@ -77,15 +76,19 @@ public class ChatUtils {
 
 	public static final Component deserialize(String string) {
 		try {
-			return GsonComponentSerializer.gson().deserialize(string);
+			return TextUtils.deserializeJson(string);
 		} catch (Exception e) {
-			return LegacyComponentSerializer.legacyAmpersand().deserialize(string);
+			try {
+				return TextUtils.deserializeLegacy(string);
+			} catch (Exception e2) {
+				return Component.text(string);
+			}
 		}
 	}
 
 	public static final Component removeFirstSymbol(Component component, char symbol) {
 		String plain = TextUtils.clearDecorations(component);
-		if(plain.charAt(0) != symbol) return component;
+		if(plain.length() == 0 || plain.charAt(0) != symbol) return component;
 		return component.replaceText(TextReplacementConfig.builder().match(String.valueOf(symbol)).replacement(Component.empty()).times(1).build());
 	}
 
@@ -95,8 +98,7 @@ public class ChatUtils {
 		for(ChatFilter filter : filters) {
 			if(!filter.isIgnoreChanel(chanel) && !player.hasPermission(Permissions.ignoreFilterPerm(filter.getFilterName()))) {
 				if(filter.getRuleType() == RuleTypes.ANTI_CAPS) {
-					String anticaps = capitalize(TextUtils.serializeLegacy(toReturn));
-					toReturn = TextUtils.deserializeLegacy(anticaps.replace(anticaps.charAt(0), Character.toUpperCase(anticaps.charAt(0))));
+					toReturn = TextUtils.deserializeLegacy(capitalize(TextUtils.serializeLegacy(toReturn)));
 				}
 				if(filter.isRegex(toReturn)) {
 					Optional<Component> send = filter.getSendMessage().isPresent() && !locales.getAbstractLocaleUtil(org.spongepowered.api.util.locale.Locales.DEFAULT).getLocaleNode(filter.getSendMessage().get()).virtual() ? Optional.ofNullable(locales.getText(player.locale(), filter.getSendMessage().get())) : Optional.empty();
@@ -147,7 +149,7 @@ public class ChatUtils {
 
 	public static String capitalize(final String str) {
 		String[] players = Sponge.server().onlinePlayers().stream().filter(player -> (str.contains(player.name()))).map(ServerPlayer::name).toArray(String[]::new);
-		final int delimLen = delimiters == null ? -1 : delimiters.length;
+		final int delimLen = delimiters.length;
 		if (StringUtils.isEmpty(str) || delimLen == 0) {
 			return str;
 		}
@@ -158,7 +160,7 @@ public class ChatUtils {
 			if(buffer.length > i + 1 && isDelimiter(ch, buffer[i + 1])) {
 				capitalizeNext = true;
 			} else if(capitalizeNext) {
-				if(i == 0 || buffer.length > i + 1) buffer[i == 0 ? i : i + 1] = Character.toTitleCase(i == 0 ? ch : buffer[i + 1]);
+				buffer[i == 0 || buffer.length < i + 1 ? i : i + 1] = Character.toTitleCase(buffer[i == 0 || buffer.length < i + 1 ? i : i + 1]);
 				capitalizeNext = false;
 			}
 		}
