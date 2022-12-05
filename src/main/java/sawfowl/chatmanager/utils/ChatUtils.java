@@ -149,18 +149,18 @@ public class ChatUtils {
 
 	public static String capitalize(final String str) {
 		String[] players = Sponge.server().onlinePlayers().stream().filter(player -> (str.contains(player.name()))).map(ServerPlayer::name).toArray(String[]::new);
-		final int delimLen = delimiters.length;
-		if (StringUtils.isEmpty(str) || delimLen == 0) {
+		if (StringUtils.isEmpty(str)) {
 			return str;
 		}
 		final char[] buffer = str.toLowerCase().toCharArray();
+		int length = buffer.length;
 		boolean capitalizeNext = true;
-		for (int i = 0; i < buffer.length; i++) {
+		for (int i = 0; i < length; i++) {
 			final char ch = buffer[i];
-			if(buffer.length > i + 1 && isDelimiter(ch, buffer[i + 1])) {
+			if(length > i + 1 && isDelimiter(ch, buffer[i + 1])) {
 				capitalizeNext = true;
 			} else if(capitalizeNext) {
-				buffer[i == 0 || buffer.length < i + 1 ? i : i + 1] = Character.toTitleCase(buffer[i == 0 || buffer.length < i + 1 ? i : i + 1]);
+				buffer[i == 0 || length < i + 1 ? i : i + 1] = Character.toTitleCase(buffer[i == 0 || length < i + 1 ? i : i + 1]);
 				capitalizeNext = false;
 			}
 		}
