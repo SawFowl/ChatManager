@@ -45,7 +45,7 @@ import sawfowl.chatmanager.utils.RegionService;
 @Plugin("chatmanager")
 public class ChatManager {
 
-	private ChatManager instance;
+	private static ChatManager instance;
 	private PluginContainer pluginContainer;
 	private Logger logger;
 	private Locales locales;
@@ -132,7 +132,7 @@ public class ChatManager {
 		ignoresConfig.setAndSave(getIgnoresConfig());
 	}
 
-	public ChatManager getInstance() {
+	public static ChatManager getInstance() {
 		return instance;
 	}
 

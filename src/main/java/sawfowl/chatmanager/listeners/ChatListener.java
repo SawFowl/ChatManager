@@ -21,7 +21,6 @@ import sawfowl.chatmanager.Permissions;
 import sawfowl.chatmanager.configure.LocalesPaths;
 import sawfowl.chatmanager.configure.ReplaceKeys;
 import sawfowl.chatmanager.data.Chanel;
-import sawfowl.chatmanager.data.ChanelTypes;
 import sawfowl.chatmanager.utils.ChatUtils;
 import sawfowl.chatmanager.utils.FilterResult;
 import sawfowl.localeapi.api.TextUtils;
@@ -53,22 +52,25 @@ public class ChatListener {
 			return;
 		}
 		message = ChatUtils.deserialize(TextUtils.serializeLegacy(message));
-		Predicate<Audience> predicate = getReceiversFilter(chanel, player, locatable);
 		boolean showOnlySelf = false;
+		Predicate<Audience> predicate = getReceiversFilter(chanel, player, showOnlySelf, locatable);
 		if(isPlayer) {
 			predicate = predicate.and(ChatUtils.getNotIgnores(player, plugin.getIgnoresConfig()));
 			if(!player.hasPermission(Permissions.STYLE)) message = Component.text(TextUtils.clearDecorations(message));
+			message = ChatUtils.showItem(player, message);
 			FilterResult filterResult = ChatUtils.getFilterResult(plugin.getLocales(), plugin.getPluginContainer(), player, message, plugin.getConfig().getFilters(), chanel);
-			if(filterResult.isShowOnlySelf()) {
-				showOnlySelf = true;
-				predicate = showOnlySelf(player);
-			}
-			if(filterResult.isDontSendMessage() || !filterResult.getMessage().isPresent()) {
+			showOnlySelf = filterResult.isShowOnlySelf();
+			if(filterResult.isDontSendMessage()) {
 				event.setCancelled(true);
 				filterResult = null;
 				return;
 			}
-			message = ChatUtils.showItem(player, filterResult.getMessage().get());
+			if(filterResult.getMessage().isPresent()) {
+				message = filterResult.getMessage().get();
+			} else {
+				event.setCancelled(true);
+				return;
+			}
 		}
 		event.setMessage(message);
 		event.setChatFormatter(chanel.getChatFormatter());
@@ -80,7 +82,7 @@ public class ChatListener {
 				p.sendMessage(isPlayer ? TextUtils.replaceToComponents(plugin.getLocales().getText(p.locale(), LocalesPaths.MENTION_BY_PLAYER), new String[]{ReplaceKeys.PLAYER}, new Component[]{player.customName().isPresent() ? player.customName().get().get() : Component.text(player.name())}) : plugin.getLocales().getText(p.locale(), LocalesPaths.MENTION_BY_NOT_PLAYER));
 			});
 		}
-		if(isPlayer && !showOnlySelf && chanel.getType() != ChanelTypes.GLOBAL) chatSpy(predicate, chanel, player, message, event.originalMessage());
+		if(isPlayer) chatSpy(predicate, chanel, player, message, event.originalMessage());
 	}
 
 	private void chatSpy(Predicate<Audience> predicate, Chanel chanel, ServerPlayer player, Component message, Component original) {
@@ -89,7 +91,8 @@ public class ChatListener {
 		});
 	}
 
-	private Predicate<Audience> getReceiversFilter(Chanel chanel, ServerPlayer player, Locatable locatable) {
+	private Predicate<Audience> getReceiversFilter(Chanel chanel, ServerPlayer player, boolean showOnlySelf, Locatable locatable) {
+		if(player != null && showOnlySelf) return audience -> (!(audience instanceof ServerPlayer) || ((ServerPlayer) audience).uniqueId().equals(player.uniqueId()));
 		switch(chanel.getType()) {
 			case WORLDS: {
 				return ChatUtils.getWorldFilter(chanel);
@@ -109,10 +112,6 @@ public class ChatListener {
 			}
 		}
 		return ChatUtils.getPermissionFilter(chanel);
-	}
-
-	private Predicate<Audience> showOnlySelf(ServerPlayer player) {
-		return audience -> (!(audience instanceof ServerPlayer) || ((ServerPlayer) audience).uniqueId().equals(player.uniqueId()));
 	}
 
 	private boolean antiSpam(ServerPlayer player) {

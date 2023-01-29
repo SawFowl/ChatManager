@@ -22,7 +22,7 @@ public class ReplaceKeys {
 
 	public static final String TIME = "%time%";
 
-	public static final String LINK_ITEM = "*item";
+	public static final String LINK_ITEM = "%item";
 
 	public static final String MESSAGE = "%message%";
 
