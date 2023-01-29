@@ -36,7 +36,6 @@ public class ChatListener {
 
 	@Listener(order = Order.LAST)
 	public void onMessage(PlayerChatEvent event, @First Locatable locatable) {
-		if(event.isCancelled() || !TextUtils.serializeLegacy(event.message()).equals(TextUtils.serializeLegacy(event.originalMessage()))) return;
 		Chanel chanel = plugin.getConfig().getChanel(ChatUtils.firstSymbol(event.message()));
 		boolean isPlayer = locatable instanceof ServerPlayer;
 		ServerPlayer player = isPlayer ? (ServerPlayer) locatable : null;
@@ -52,25 +51,22 @@ public class ChatListener {
 			return;
 		}
 		message = ChatUtils.deserialize(TextUtils.serializeLegacy(message));
-		boolean showOnlySelf = false;
-		Predicate<Audience> predicate = getReceiversFilter(chanel, player, showOnlySelf, locatable);
+		Predicate<Audience> predicate = getReceiversFilter(chanel, player, locatable);
 		if(isPlayer) {
 			predicate = predicate.and(ChatUtils.getNotIgnores(player, plugin.getIgnoresConfig()));
 			if(!player.hasPermission(Permissions.STYLE)) message = Component.text(TextUtils.clearDecorations(message));
-			message = ChatUtils.showItem(player, message);
 			FilterResult filterResult = ChatUtils.getFilterResult(plugin.getLocales(), plugin.getPluginContainer(), player, message, plugin.getConfig().getFilters(), chanel);
-			showOnlySelf = filterResult.isShowOnlySelf();
 			if(filterResult.isDontSendMessage()) {
 				event.setCancelled(true);
 				filterResult = null;
 				return;
 			}
-			if(filterResult.getMessage().isPresent()) {
-				message = filterResult.getMessage().get();
-			} else {
+			if(!filterResult.getMessage().isPresent()) {
 				event.setCancelled(true);
 				return;
-			}
+			} message = filterResult.getMessage().get();
+			message = ChatUtils.showItem(player, message);
+			if(filterResult.isShowOnlySelf()) predicate = audience -> (!(audience instanceof ServerPlayer) || ((ServerPlayer) audience).uniqueId().equals(player.uniqueId()));
 		}
 		event.setMessage(message);
 		event.setChatFormatter(chanel.getChatFormatter());
@@ -91,8 +87,7 @@ public class ChatListener {
 		});
 	}
 
-	private Predicate<Audience> getReceiversFilter(Chanel chanel, ServerPlayer player, boolean showOnlySelf, Locatable locatable) {
-		if(player != null && showOnlySelf) return audience -> (!(audience instanceof ServerPlayer) || ((ServerPlayer) audience).uniqueId().equals(player.uniqueId()));
+	private Predicate<Audience> getReceiversFilter(Chanel chanel, ServerPlayer player, Locatable locatable) {
 		switch(chanel.getType()) {
 			case WORLDS: {
 				return ChatUtils.getWorldFilter(chanel);

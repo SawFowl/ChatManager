@@ -1,6 +1,7 @@
 package sawfowl.chatmanager.data.filters;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,7 +18,6 @@ import sawfowl.localeapi.api.TextUtils;
 
 @ConfigSerializable
 public class ChatFilter {
-
 	public ChatFilter(){}
 
 	public ChatFilter(FilterRule rule, RuleTypes type, String regex, String[] sendMessage) {
@@ -87,5 +87,14 @@ public class ChatFilter {
 	public Optional<Object[]> getSendMessage() {
 		return sendMessage == null || sendMessage.length == 0 ? Optional.empty() : Optional.ofNullable(sendMessage);
 	}
+
+	@Override
+	public String toString() {
+		return "ChatFilter [rule=" + rule + ", filterName=" + filterName + ", ruleType=" + ruleType + ", commandRule="
+				+ commandRule + ", punishRule=" + punishRule + ", replaceRule=" + replaceRule + ", regex=" + regex
+				+ ", dontSendMessage=" + dontSendMessage + ", ignoreChanels=" + ignoreChanels + ", sendMessage="
+				+ Arrays.toString(sendMessage) + "]";
+	}
+
 
 }
