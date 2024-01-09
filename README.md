@@ -7,7 +7,7 @@ All plugin messages are multilingual.
 
 ##### Permissions:
 chatmanager.chanel.chanel_name.send - Sending a message to the selected chat channel. If the player does not have permission for the channel, the default channel will be selected. \
-chatmanager.chanel.chanel_name.receive - Permission to view messages in the channel. \
+chatmanager.chanel.chanel_name.recieve - Permission to view messages in the channel. \
 chatmanager.ignorefilter.filter_name - Ignoring the filter. \
 chatmanager.user.style - Ability to decorate the text. \
 chatmanager.user.ignore - Access to the "Ignore other players" command. \

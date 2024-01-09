@@ -14,12 +14,10 @@ import org.spongepowered.api.world.server.ServerWorld;
 import org.spongepowered.math.vector.Vector3i;
 import org.spongepowered.plugin.PluginContainer;
 
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+
 import sawfowl.chatmanager.Permissions;
 import sawfowl.chatmanager.configure.Locales;
 import sawfowl.chatmanager.configure.ReplaceKeys;
@@ -30,8 +28,9 @@ import sawfowl.chatmanager.data.filters.RuleTypes;
 import sawfowl.chatmanager.data.filters.rules.CommandRule;
 import sawfowl.chatmanager.data.filters.rules.PunishRule;
 import sawfowl.chatmanager.data.filters.rules.ReplaceRule;
+import sawfowl.localeapi.api.Text;
 import sawfowl.localeapi.api.TextUtils;
-import sawfowl.localeapi.serializetools.SerializedItemStack;
+import sawfowl.localeapi.api.serializetools.itemstack.SerializedItemStack;
 
 public class ChatUtils {
 
@@ -41,20 +40,20 @@ public class ChatUtils {
 		return TextUtils.clearDecorations(component).charAt(0);
 	}
 
-	public static final Predicate<Audience> getLocalFilter(ServerWorld world, Vector3i vector3i, Chanel chanel) {
-		return audience -> (!(audience instanceof ServerPlayer) || (chanel.hasRecievePermission((ServerPlayer) audience) && sameWorld((ServerPlayer) audience, world) && isAround((ServerPlayer) audience, vector3i, chanel.getRange())));
+	public static final Predicate<ServerPlayer> getLocalFilter(ServerWorld world, Vector3i vector3i, Chanel chanel) {
+		return audience -> chanel.hasRecievePermission(audience) && sameWorld(audience, world) && isAround(audience, vector3i, chanel.getRange());
 	}
 
-	public static final Predicate<Audience> getWorldFilter(Chanel chanel) {
-		return audience -> (!(audience instanceof ServerPlayer) || (chanel.hasRecievePermission((ServerPlayer) audience) && chanel.isAllowedWorld(((ServerPlayer) audience).world())));
+	public static final Predicate<ServerPlayer> getWorldFilter(Chanel chanel) {
+		return audience -> chanel.hasRecievePermission(audience) && chanel.isAllowedWorld((audience).world());
 	}
 
-	public static final Predicate<Audience> getPermissionFilter(Chanel chanel) {
-		return audience -> (!(audience instanceof ServerPlayer) || chanel.hasRecievePermission((ServerPlayer) audience));
+	public static final Predicate<ServerPlayer> getPermissionFilter(Chanel chanel) {
+		return audience -> chanel.hasRecievePermission(audience);
 	}
 
-	public static final Predicate<Audience> getNotIgnores(ServerPlayer player, Ignores ignores) {
-		return audience -> (player.hasPermission(Permissions.IGNORE_BYPASS) || !(audience instanceof ServerPlayer)) || !ignores.isIgnore((ServerPlayer) audience, player);
+	public static final Predicate<ServerPlayer> getNotIgnores(ServerPlayer player, Ignores ignores) {
+		return audience -> player.hasPermission(Permissions.IGNORE_BYPASS) || !ignores.isIgnore(audience, player);
 	}
 
 	public static final boolean sameWorld(ServerPlayer first, ServerWorld world) {
@@ -66,21 +65,13 @@ public class ChatUtils {
 	}
 
 	public static final Component getOption(ServerPlayer player, String option) {
-		return player.option(option).isPresent() ? deserialize(player.option(option).get()) : Component.empty();
+		return player.option(option).isPresent() ? TextUtils.deserialize(player.option(option).get()) : Component.empty();
 	}
 
 	public static Component showItem(ServerPlayer player, Component component) {
 		if(!component.toString().contains(ReplaceKeys.LINK_ITEM)) return component;
 		SerializedItemStack itemStack = new SerializedItemStack(player.itemInHand(HandTypes.MAIN_HAND));
 		return replace(component, ReplaceKeys.LINK_ITEM, itemStack.getItemStack().asComponent().hoverEvent(HoverEvent.showItem(itemStack.getItemKey(), itemStack.getQuantity())));
-	}
-
-	public static final Component deserialize(String string) {
-		try {
-			return GsonComponentSerializer.gson().deserialize(string);
-		} catch (Exception e) {
-			return LegacyComponentSerializer.legacyAmpersand().deserialize(string);
-		}
 	}
 
 	public static final Component removeFirstSymbol(Component component, char symbol) {
@@ -99,13 +90,13 @@ public class ChatUtils {
 					toReturn = TextUtils.deserializeLegacy(anticaps.replace(anticaps.charAt(0), Character.toUpperCase(anticaps.charAt(0))));
 				}
 				if(filter.isRegex(toReturn)) {
-					Optional<Component> send = filter.getSendMessage().isPresent() && !locales.getAbstractLocaleUtil(org.spongepowered.api.util.locale.Locales.DEFAULT).getLocaleNode(filter.getSendMessage().get()).virtual() ? Optional.ofNullable(locales.getText(player.locale(), filter.getSendMessage().get())) : Optional.empty();
+					Optional<Component> send = filter.getSendMessage().isPresent() && !locales.getPluginLocale(org.spongepowered.api.util.locale.Locales.DEFAULT).getLocaleNode(filter.getSendMessage().get()).virtual() ? Optional.ofNullable(locales.getComponent(player.locale(), filter.getSendMessage().get())) : Optional.empty();
 					if(filter.getRuleType() == RuleTypes.SHOW_ONLY_SELF) {
 						result.showOnlySelf = true;
 						break;
 					} else if(filter.getRuleType() == RuleTypes.REPLACE) {
 						ReplaceRule rule = (ReplaceRule) filter.getRule();
-						toReturn = TextUtils.replaceToComponents(toReturn, new String[] {filter.getRegex()}, new Component[] {deserialize(rule.getReplaceTo())});
+						toReturn = Text.of(toReturn).replace(filter.getRegex(), TextUtils.deserialize(rule.getReplaceTo())).get();
 					} else if(filter.getRuleType() == RuleTypes.COMMAND) {
 						CommandRule rule = (CommandRule) filter.getRule();
 						rule.run(player, container);
@@ -137,7 +128,7 @@ public class ChatUtils {
 						result.dontSendMessage = true;
 						break;
 					}
-					if(send.isPresent() && player.isOnline()) player.sendMessage(locales.getText(player.locale(), filter.getSendMessage().get()));
+					if(send.isPresent() && player.isOnline()) player.sendMessage(locales.getComponent(player.locale(), filter.getSendMessage().get()));
 				}
 			}
 		}

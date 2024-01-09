@@ -1,7 +1,6 @@
 package sawfowl.chatmanager.configure;
 
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import net.kyori.adventure.text.Component;
@@ -9,7 +8,8 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import sawfowl.localeapi.api.ConfigTypes;
 import sawfowl.localeapi.api.LocaleService;
-import sawfowl.localeapi.utils.AbstractLocaleUtil;
+import sawfowl.localeapi.api.PluginLocale;
+import sawfowl.localeapi.api.Text;
 
 public class Locales {
 
@@ -24,30 +24,30 @@ public class Locales {
 	}
 
 	public String getString(Locale locale, Object... path) {
-		return LegacyComponentSerializer.legacyAmpersand().serialize(getText(locale, path));
+		return LegacyComponentSerializer.legacyAmpersand().serialize(getComponent(locale, path));
 	}
 
-	public Component getText(Locale locale, Object... path) {
-		return getAbstractLocaleUtil(locale).getComponent(json, path);
+	public Component getComponent(Locale locale, Object... path) {
+		return getPluginLocale(locale).getComponent(path);
 	}
 
-	public Component getTextReplaced1(Locale locale, Map<String, String> map, Object... path) {
-		return getAbstractLocaleUtil(locale).getComponentReplaced1(map, json, path);
+	public Component getComponentFromDefault(Object... path) {
+		return getPluginLocale(org.spongepowered.api.util.locale.Locales.DEFAULT).getComponent(path);
 	}
 
-	public Component getTextReplaced2(Locale locale, Map<String, Component> map, Object... path) {
-		return getAbstractLocaleUtil(locale).getComponentReplaced2(map, json, path);
+	public Text getText(Locale locale, Object... path) {
+		return getPluginLocale(locale).getText(path);
 	}
 
-	public Component getTextFromDefault(Object... path) {
-		return getAbstractLocaleUtil(org.spongepowered.api.util.locale.Locales.DEFAULT).getComponent(json, path);
+	public Text getTextFromDefault(Object... path) {
+		return getPluginLocale(org.spongepowered.api.util.locale.Locales.DEFAULT).getText(path);
 	}
 
 	public LocaleService getLocaleService() {
 		return localeService;
 	}
 
-	public AbstractLocaleUtil getAbstractLocaleUtil(Locale locale) {
+	public PluginLocale getPluginLocale(Locale locale) {
 		return localeService.getPluginLocales(pluginid).get(locale);
 	}
 
@@ -55,15 +55,15 @@ public class Locales {
 		return LegacyComponentSerializer.legacyAmpersand().deserialize(string);
 	}
 
-	private boolean check(boolean save, AbstractLocaleUtil localeUtil, Component value, String comment, Object... path) {
+	private boolean check(boolean save, PluginLocale localeUtil, Component value, String comment, Object... path) {
 		return localeUtil.checkComponent(json, value, comment, path) || save;
 	}
 
-	private void save(AbstractLocaleUtil localeUtil) {
+	private void save(PluginLocale localeUtil) {
 		localeUtil.saveLocaleNode();
 	}
 
-	private void generateDefault(AbstractLocaleUtil localeUtil) {
+	private void generateDefault(PluginLocale localeUtil) {
 
 		boolean save = check(false, localeUtil, toText("&cPlease do not spam!"), null, LocalesPaths.ANTISPAM);
 		save = check(false, localeUtil, toText("&cNo expressions!"), null, Stream.of(LocalesPaths.NOEXPRESSIONS).toArray());
@@ -81,7 +81,7 @@ public class Locales {
 		if(save) save(localeUtil);
 	}
 
-	private void generateRu(AbstractLocaleUtil localeUtil) {
+	private void generateRu(PluginLocale localeUtil) {
 
 		boolean save = check(false, localeUtil, toText("&cНе спамьте!"), null, LocalesPaths.ANTISPAM);
 		save = check(false, localeUtil, toText("&cНе выражаться!"), null, Stream.of(LocalesPaths.NOEXPRESSIONS).toArray());

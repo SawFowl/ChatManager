@@ -17,8 +17,6 @@ import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
-import org.spongepowered.configurate.ConfigurationOptions;
-import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.configurate.reference.ConfigurationReference;
 import org.spongepowered.configurate.reference.ValueReference;
 import org.spongepowered.plugin.PluginContainer;
@@ -26,7 +24,6 @@ import org.spongepowered.plugin.builtin.jvm.Plugin;
 
 import com.google.inject.Inject;
 
-import sawfowl.localeapi.event.LocaleServiseEvent;
 import sawfowl.chatmanager.commands.ClaimChanelCommand;
 import sawfowl.chatmanager.commands.GlobalChanelCommand;
 import sawfowl.chatmanager.commands.IgnoreCommand;
@@ -41,6 +38,8 @@ import sawfowl.chatmanager.listeners.ChatListener;
 import sawfowl.chatmanager.listeners.CommandListener;
 import sawfowl.chatmanager.utils.ChatFormatter;
 import sawfowl.chatmanager.utils.RegionService;
+import sawfowl.localeapi.api.event.LocaleServiseEvent;
+import sawfowl.localeapi.api.serializetools.SerializeOptions;
 
 @Plugin("chatmanager")
 public class ChatManager {
@@ -56,7 +55,6 @@ public class ChatManager {
 	private ValueReference<Config, CommentedConfigurationNode> config;
 	private ConfigurationReference<CommentedConfigurationNode> configurationReferenceIgnores;
 	private ValueReference<Ignores, CommentedConfigurationNode> ignoresConfig;
-	private ConfigurationOptions options;
 	private Map<UUID, Long> antispamMap = new HashMap<>();
 
 	@Inject
@@ -69,16 +67,15 @@ public class ChatManager {
 
 	@Listener
 	public void onPostLocaleAPI(LocaleServiseEvent.Construct event) {
-		options = event.getLocaleService().getConfigurationOptions();
 		try {
 			Path defaultConfig = configDir.resolve("Config.conf");
-			configurationReference = HoconConfigurationLoader.builder().defaultOptions(options).path(defaultConfig).build().loadToReference();
+			configurationReference = SerializeOptions.createHoconConfigurationLoader(2).path(defaultConfig).build().loadToReference();
 			this.config = configurationReference.referenceTo(Config.class);
 			if(!defaultConfig.toFile().exists()) {
 				configurationReference.save();
 			} else configurationReference.load();
 			Path ignoresConfig = configDir.resolve("Ignores.conf");
-			configurationReferenceIgnores = HoconConfigurationLoader.builder().defaultOptions(options).path(configDir.resolve("Ignores.conf")).build().loadToReference();
+			configurationReferenceIgnores = SerializeOptions.createHoconConfigurationLoader(2).path(configDir.resolve("Ignores.conf")).build().loadToReference();
 			this.ignoresConfig = configurationReferenceIgnores.referenceTo(Ignores.class);
 			if(!ignoresConfig.toFile().exists()) {
 				configurationReferenceIgnores.save();
@@ -121,7 +118,7 @@ public class ChatManager {
 		try {
 			configurationReference.load();
 			config = configurationReference.referenceTo(Config.class);
-			configurationReferenceIgnores = HoconConfigurationLoader.builder().defaultOptions(options).path(configDir.resolve("Ignores.conf")).build().loadToReference();
+			configurationReferenceIgnores = SerializeOptions.createHoconConfigurationLoader(2).path(configDir.resolve("Ignores.conf")).build().loadToReference();
 			this.ignoresConfig = configurationReferenceIgnores.referenceTo(Ignores.class);
 		} catch (ConfigurateException e) {
 			logger.error(e.getLocalizedMessage());
@@ -158,10 +155,6 @@ public class ChatManager {
 
 	public Ignores getIgnoresConfig() {
 		return ignoresConfig.get();
-	}
-
-	public ConfigurationOptions getOptions() {
-		return options;
 	}
 
 	public RegionService getRegionService() {

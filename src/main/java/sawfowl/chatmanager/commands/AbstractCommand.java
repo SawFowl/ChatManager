@@ -15,8 +15,10 @@ import org.spongepowered.api.command.CommandExecutor;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.exception.CommandException;
 import org.spongepowered.api.entity.living.player.server.ServerPlayer;
+import org.spongepowered.api.util.Nameable;
 import org.spongepowered.api.util.locale.LocaleSource;
 import org.spongepowered.api.util.locale.Locales;
+import org.spongepowered.api.world.DefaultWorldKeys;
 import org.spongepowered.api.world.server.ServerWorld;
 
 import net.kyori.adventure.audience.Audience;
@@ -32,6 +34,7 @@ import sawfowl.chatmanager.configure.LocalesPaths;
 import sawfowl.chatmanager.configure.ReplaceKeys;
 import sawfowl.chatmanager.data.Chanel;
 import sawfowl.chatmanager.utils.ChatUtils;
+import sawfowl.localeapi.api.Text;
 import sawfowl.localeapi.api.TextUtils;
 
 public abstract class AbstractCommand implements CommandExecutor {
@@ -64,6 +67,10 @@ public abstract class AbstractCommand implements CommandExecutor {
 		throw new CommandException(text);
 	}
 
+	CommandException exception(Text text) throws CommandException {
+		return exception(text.get());
+	}
+
 	Component toText(String string) {
 		try {
 			return GsonComponentSerializer.gson().deserialize(string);
@@ -76,10 +83,10 @@ public abstract class AbstractCommand implements CommandExecutor {
 		if(component.toString().contains("@")) {
 			String stringMessage = TextUtils.serializeLegacy(component);
 			boolean isPlayer = audience instanceof ServerPlayer;
-			ServerPlayer player = isPlayer ? (ServerPlayer) audience : null;
-			Sponge.server().onlinePlayers().stream().filter(predicate).filter(p -> (stringMessage.contains("@" + p.name()) && (!isPlayer || !p.name().equals(player.name())))).findFirst().ifPresent(p -> {
+			Component sourceName = isPlayer ? ((ServerPlayer) audience).customName().map(name -> name.get()).orElse(Component.text(((ServerPlayer) audience).name())) : audience instanceof Nameable ? Component.text(((Nameable) audience).name()) : Component.text("Server");
+			Sponge.server().onlinePlayers().stream().filter(predicate).filter(p -> ((stringMessage.contains("@" + p.name()) || (p.customName().isPresent() && stringMessage.contains("@" + TextUtils.clearDecorations(sourceName)))) && (!isPlayer || (!p.customName().filter(name -> TextUtils.clearDecorations(name.get()).equals(TextUtils.clearDecorations(sourceName))).isPresent() && !p.name().equals(TextUtils.clearDecorations(sourceName)))))).findFirst().ifPresent(p -> {
 				p.playSound(Sound.sound(plugin.getConfig().getSound(), Sound.Source.VOICE, 100, 50));
-				p.sendMessage(isPlayer ? TextUtils.replaceToComponents(plugin.getLocales().getText(p.locale(), LocalesPaths.MENTION_BY_PLAYER), new String[]{ReplaceKeys.PLAYER}, new Component[] {player.customName().isPresent() ? player.customName().get().get() : Component.text(player.name())}) : plugin.getLocales().getText(p.locale(), LocalesPaths.MENTION_BY_NOT_PLAYER));
+				p.sendMessage(plugin.getLocales().getText(p.locale(), isPlayer ? LocalesPaths.MENTION_BY_PLAYER : LocalesPaths.MENTION_BY_NOT_PLAYER).replace(ReplaceKeys.PLAYER, sourceName).get());
 			});
 		}
 	}
@@ -89,11 +96,11 @@ public abstract class AbstractCommand implements CommandExecutor {
 		if(audience instanceof ServerPlayer) {
 			ServerPlayer player = (ServerPlayer) audience;
 			Component message = ChatUtils.showItem(player, !player.hasPermission(Permissions.STYLE) ? toText(TextUtils.clearDecorations(text)) : text);
-			return chanel.getChatFormatter().buildFormatForPlayer(player, message);
+			return chanel.getChatFormatter().buildFormatForPlayer(player).append(message);
 		}
-		if(audience instanceof CommandBlock) return chanel.getChatFormatter().buildFormatForCommandBlock(chanel, world, text);
+		if(audience instanceof CommandBlock) return chanel.getChatFormatter().buildFormatForCommandBlock(chanel, world).append(Component.text(" ")).append(text);
 		if(audience instanceof SystemSubject) return chanel.getChatFormatter().buildFormatForConsole(chanel, world, text);
-		throw exception(TextUtils.replace(plugin.getLocales().getText(locale, LocalesPaths.UNKNOWN_SENDER), new String[]{ReplaceKeys.SENDER}, new String[] {audience.getClass().getName()}));
+		throw exception(plugin.getLocales().getText(locale, LocalesPaths.UNKNOWN_SENDER).replace(ReplaceKeys.SENDER, audience.getClass().getName()));
 	}
 
 	void sendMessage(Component message, Component original, Predicate<ServerPlayer> filter, boolean isPlayer, Audience player) {
@@ -107,7 +114,7 @@ public abstract class AbstractCommand implements CommandExecutor {
 	}
 
 	ServerWorld defaultWorld() {
-		return Sponge.server().worldManager().defaultWorld();
+		return Sponge.server().worldManager().world(DefaultWorldKeys.DEFAULT).get();
 	}
 
 	ServerWorld getWorldForConsole() {

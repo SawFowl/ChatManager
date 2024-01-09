@@ -1,14 +1,14 @@
 plugins {
 	id("java")
-	id("org.spongepowered.gradle.plugin") version "2.0.2"
 	id("eclipse")
+	id("org.spongepowered.gradle.plugin") version "2.0.2"
 }
 
 group = "sawfowl.chatmanager"
 version = "${major}.${minor}.${patch}-${api}-${suffix}"
 
 java {
-	sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_8
+	sourceCompatibility = targetCompatibility = JavaVersion.VERSION_17
 }
 
 repositories {
@@ -28,14 +28,14 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-	implementation "org.spongepowered:spongeapi:8.0.0"
-	implementation "com.github.SawFowl:LocaleAPI:2.3.0"
-	implementation "com.github.SawFowl:RegionGuard:1.5.0"
+	implementation "org.spongepowered:spongeapi:${api}"
+	implementation "com.github.SawFowl:LocaleAPI:${localeapi}"
+	implementation "com.github.SawFowl:RegionGuard:${regionguard}"
 	//implementation fileTree(dir: 'libs', include: '*.jar')
 }
 
 sponge {
-	apiVersion("8.0.0")
+	apiVersion("${api}")
 	loader {
 		name("java_plain")
 		version("1.0")
@@ -52,17 +52,45 @@ sponge {
 		dependency("spongeapi") {
 			optional(false)
 			loadOrder("after")
-			version("8.0.0")
+			version("${api}")
 		}
 		dependency("localeapi") {
 			optional(false)
 			loadOrder("after")
-			version("2.3.0")
+			version("${localeapi}")
 		}
 		dependency("regionguard") {
 			optional(true)
 			loadOrder("after")
-			version("1.5.0")
+			version("${regionguard}")
 		}
 	}
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+configurations {
+	doc {
+		transitive false
+	}
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+	source configurations.doc.collect { zipTree(it) }
+	include '**/*.java'
+	options.addStringOption('Xdoclint:none', '-quiet')
 }

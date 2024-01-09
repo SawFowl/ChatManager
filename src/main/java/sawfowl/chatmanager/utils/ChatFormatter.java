@@ -3,21 +3,19 @@ package sawfowl.chatmanager.utils;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.Optional;
 
-import org.spongepowered.api.entity.living.player.PlayerChatFormatter;
 import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 import org.spongepowered.api.util.locale.Locales;
 import org.spongepowered.api.world.server.ServerWorld;
 
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+
 import sawfowl.chatmanager.ChatManager;
 import sawfowl.chatmanager.configure.ReplaceKeys;
 import sawfowl.chatmanager.data.Chanel;
 import sawfowl.localeapi.api.TextUtils;
 
-public class ChatFormatter implements PlayerChatFormatter {
+public class ChatFormatter {
 
 	private final ChatManager plugin;
 	private final Chanel chanel;
@@ -28,25 +26,19 @@ public class ChatFormatter implements PlayerChatFormatter {
 		this.regions = regions;
 	}
 
-	@Override
-	public Optional<Component> format(ServerPlayer player, Audience target, Component message, Component originalMessage) {
-		return Optional.ofNullable(buildFormatForPlayer(player, message));
-	}
-
-	public Component buildFormatForPlayer(ServerPlayer player, Component message) {
+	public Component buildFormatForPlayer(ServerPlayer player) {
 		String pattern = chanel.getFormat();
 		Component toReturn = chanel.deserializedFormat();
 		if(pattern.contains(ReplaceKeys.TIME)) toReturn = replace(toReturn, ReplaceKeys.TIME, createPart(player, ReplaceKeys.TIME, getTime(player.locale())));
 		if(pattern.contains(ReplaceKeys.CHANEL)) toReturn = replace(toReturn, ReplaceKeys.CHANEL, createPart(player, ReplaceKeys.CHANEL, chanel.getPrefix()));
-		if(pattern.contains(ReplaceKeys.DISPLAY_NAME)) toReturn = replace(toReturn, ReplaceKeys.DISPLAY_NAME, createPart(player, ReplaceKeys.DISPLAY_NAME, player.customName().isPresent() ? player.customName().get().get() : ChatUtils.deserialize(player.name())));
+		if(pattern.contains(ReplaceKeys.DISPLAY_NAME)) toReturn = replace(toReturn, ReplaceKeys.DISPLAY_NAME, createPart(player, ReplaceKeys.DISPLAY_NAME, player.customName().isPresent() ? player.customName().get().get() : TextUtils.deserialize(player.name())));
 		if(pattern.contains(ReplaceKeys.PLAYER)) toReturn = replace(toReturn, ReplaceKeys.PLAYER, createPart(player, ReplaceKeys.PLAYER, Component.text(player.name())));
 		if(pattern.contains(ReplaceKeys.PREFIX)) toReturn = replace(toReturn, ReplaceKeys.PREFIX, createPart(player, ReplaceKeys.PREFIX, ChatUtils.getOption(player, "prefix")));
 		if(pattern.contains(ReplaceKeys.RANK)) toReturn = replace(toReturn, ReplaceKeys.RANK, createPart(player, ReplaceKeys.RANK, ChatUtils.getOption(player, "rank")));
-		if(pattern.contains(ReplaceKeys.REGION)) toReturn = replace(toReturn, ReplaceKeys.REGION, createPart(player, ReplaceKeys.REGION, regions ? ChatUtils.deserialize(plugin.getRegionService().getRegionName(player)) : Component.empty()));
+		if(pattern.contains(ReplaceKeys.REGION)) toReturn = replace(toReturn, ReplaceKeys.REGION, createPart(player, ReplaceKeys.REGION, regions ? TextUtils.deserialize(plugin.getRegionService().getRegionName(player)) : Component.empty()));
 		if(pattern.contains(ReplaceKeys.SUFFIX)) toReturn = replace(toReturn, ReplaceKeys.SUFFIX, createPart(player, ReplaceKeys.SUFFIX, ChatUtils.getOption(player, "suffix")));
-		if(pattern.contains(ReplaceKeys.WORLD)) toReturn = replace(toReturn, ReplaceKeys.WORLD, createPart(player, ReplaceKeys.WORLD, ChatUtils.deserialize(player.world().key().value())));
-		if(pattern.contains(ReplaceKeys.MESSAGE)) toReturn = replace(toReturn, ReplaceKeys.MESSAGE, message);
-		return ChatUtils.deserialize(TextUtils.serializeJson(toReturn));
+		if(pattern.contains(ReplaceKeys.WORLD)) toReturn = replace(toReturn, ReplaceKeys.WORLD, createPart(player, ReplaceKeys.WORLD, TextUtils.deserialize(player.world().key().value())));
+		return toReturn;
 	}
 
 	public Component buildFormatForConsole(Chanel chanel, ServerWorld world, Component message) {
@@ -60,12 +52,12 @@ public class ChatFormatter implements PlayerChatFormatter {
 		if(pattern.contains(ReplaceKeys.RANK)) toReturn = replace(toReturn, ReplaceKeys.RANK, Component.empty());
 		if(pattern.contains(ReplaceKeys.REGION)) toReturn = replace(toReturn, ReplaceKeys.REGION, Component.empty());
 		if(pattern.contains(ReplaceKeys.SUFFIX)) toReturn = replace(toReturn, ReplaceKeys.SUFFIX, Component.empty());
-		if(pattern.contains(ReplaceKeys.WORLD)) toReturn = replace(toReturn, ReplaceKeys.WORLD, ChatUtils.deserialize(world.key().value()));
+		if(pattern.contains(ReplaceKeys.WORLD)) toReturn = replace(toReturn, ReplaceKeys.WORLD, TextUtils.deserialize(world.key().value()));
 		if(pattern.contains(ReplaceKeys.MESSAGE)) toReturn = replace(toReturn, ReplaceKeys.MESSAGE, message);
-		return ChatUtils.deserialize(TextUtils.serializeLegacy(toReturn));
+		return toReturn;
 	}
 
-	public Component buildFormatForCommandBlock(Chanel chanel, ServerWorld world, Component message) {
+	public Component buildFormatForCommandBlock(Chanel chanel, ServerWorld world) {
 		String pattern = chanel.getFormat();
 		Component toReturn = chanel.deserializedFormat();
 		if(pattern.contains(ReplaceKeys.TIME)) toReturn = replace(toReturn, ReplaceKeys.TIME, getTime(Locales.DEFAULT));
@@ -76,9 +68,8 @@ public class ChatFormatter implements PlayerChatFormatter {
 		if(pattern.contains(ReplaceKeys.RANK)) toReturn = replace(toReturn, ReplaceKeys.RANK, Component.empty());
 		if(pattern.contains(ReplaceKeys.REGION)) toReturn = replace(toReturn, ReplaceKeys.REGION, Component.empty());
 		if(pattern.contains(ReplaceKeys.SUFFIX)) toReturn = replace(toReturn, ReplaceKeys.SUFFIX, Component.empty());
-		if(pattern.contains(ReplaceKeys.WORLD)) toReturn = replace(toReturn, ReplaceKeys.WORLD, ChatUtils.deserialize(world.key().value()));
-		if(pattern.contains(ReplaceKeys.MESSAGE)) toReturn = replace(toReturn, ReplaceKeys.MESSAGE, message);
-		return ChatUtils.deserialize(TextUtils.serializeLegacy(toReturn));
+		if(pattern.contains(ReplaceKeys.WORLD)) toReturn = replace(toReturn, ReplaceKeys.WORLD, TextUtils.deserialize(world.key().value()));
+		return toReturn;
 	}
 
 	public Component getTime(Locale locale) {

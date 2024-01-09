@@ -108,7 +108,7 @@ public enum ChanelTypes {
 	}
 
 	public String getFormat() {
-		return "%chanel% %prefix% &7[&f%player%&7]&r %suffix%&f:&r %message%";
+		return "%chanel% %prefix% &7[&f%player%&7]&r %suffix%&f:&r ";
 	}
 
 	public List<String> getAllowedWorlds() {

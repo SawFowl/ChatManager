@@ -1,7 +1,5 @@
 package sawfowl.chatmanager.listeners;
 
-import java.util.Arrays;
-
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 import org.spongepowered.api.event.Listener;
@@ -11,7 +9,6 @@ import org.spongepowered.api.event.filter.cause.First;
 import sawfowl.chatmanager.ChatManager;
 import sawfowl.chatmanager.configure.LocalesPaths;
 import sawfowl.chatmanager.configure.ReplaceKeys;
-import sawfowl.localeapi.api.TextUtils;
 
 public class CommandListener {
 
@@ -26,7 +23,7 @@ public class CommandListener {
 			Sponge.server().onlinePlayers().stream().filter(p -> (event.arguments().contains(p.name()))).findFirst().ifPresent(p -> {
 				if(plugin.getIgnoresConfig().isIgnore(p, player)) {
 					event.setCancelled(true);
-					player.sendMessage(plugin.getLocales().getTextReplaced1(player.locale(), TextUtils.replaceMap(Arrays.asList(ReplaceKeys.PLAYER), Arrays.asList(p.name())), LocalesPaths.IGNORED_COMMAND));
+					player.sendMessage(plugin.getLocales().getText(player.locale(), LocalesPaths.IGNORED_COMMAND).replace(ReplaceKeys.PLAYER, p.name()).get());
 				}
 			});
 		});

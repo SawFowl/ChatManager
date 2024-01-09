@@ -38,7 +38,7 @@ public class ClaimChanelCommand extends AbstractCommand {
 		boolean isPlayer = audience instanceof ServerPlayer;
 		if(isPlayer) {
 			if(plugin.getConfig().getAntiSpamSection().isEnable() && antiSpam((ServerPlayer) audience)) {
-				audience.sendMessage(plugin.getLocales().getText(locale, LocalesPaths.ANTISPAM));
+				audience.sendMessage(plugin.getLocales().getComponent(locale, LocalesPaths.ANTISPAM));
 				return success();
 			}
 			predicate = predicate.and(ChatUtils.getNotIgnores((ServerPlayer) audience, plugin.getIgnoresConfig()));
