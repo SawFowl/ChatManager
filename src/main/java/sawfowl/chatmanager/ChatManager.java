@@ -85,7 +85,10 @@ public class ChatManager {
 		}
 		locales = new Locales(event.getLocaleService(), getConfig().isJsonLocales());
 		boolean regions = Sponge.pluginManager().plugin("regionguard").isPresent();
-		if(regions) regionService = new RegionService();
+		if(regions) {
+			regionService = new RegionService();
+			Sponge.eventManager().registerListeners(pluginContainer, regionService);
+		}
 		Sponge.eventManager().registerListeners(pluginContainer, new ChatListener(instance, regions));
 		Sponge.eventManager().registerListeners(pluginContainer, new CommandListener(instance));
 		Sponge.asyncScheduler().submit(Task.builder().plugin(pluginContainer).interval(1, TimeUnit.MINUTES).execute(() -> {

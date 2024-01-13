@@ -13,7 +13,6 @@ import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.message.PlayerChatEvent;
 import org.spongepowered.api.scheduler.Task;
-import org.spongepowered.api.util.Ticks;
 import org.spongepowered.api.world.Locatable;
 
 import net.kyori.adventure.sound.Sound;
@@ -34,10 +33,11 @@ public class ChatListener {
 
 	private final ChatManager plugin;
 	private final boolean regions;
-	private Map<String, Chanel> map = new HashMap<>();
+	private Map<String, MessageSettings> map = new HashMap<>();
 	public ChatListener(ChatManager plugin, boolean regions) {
 		this.plugin = plugin;
 		this.regions = regions;
+		Sponge.asyncScheduler().submit(Task.builder().plugin(plugin.getPluginContainer()).interval(10, TimeUnit.SECONDS).execute(() -> map.entrySet().removeIf(entry -> entry.getValue().isExpired())).build());
 	}
 
 
@@ -53,31 +53,24 @@ public class ChatListener {
 			predicate = predicate.and(ChatUtils.getNotIgnores(player, plugin.getIgnoresConfig()));
 			if(!player.hasPermission(Permissions.STYLE)) message = Component.text(TextUtils.clearDecorations(message));
 			FilterResult filterResult = ChatUtils.getFilterResult(plugin.getLocales(), plugin.getPluginContainer(), player, message, plugin.getConfig().getFilters(), chanel);
-			if(filterResult.isDontSendMessage()) {
+			if(filterResult.isDontSendMessage() || !filterResult.getMessage().isPresent()) {
 				message = Component.empty();
 				return;
 			}
-			if(!filterResult.getMessage().isPresent()) {
+			if(isPlayer && plugin.getConfig().getAntiSpamSection().isEnable() && antiSpam(player)) {
 				message = Component.empty();
+				player.sendMessage(plugin.getLocales().getComponent(player.locale(), LocalesPaths.ANTISPAM));
 				return;
-			} message = filterResult.getMessage().get();
+			}
+			message = filterResult.getMessage().get();
 			message = ChatUtils.showItem(player, message);
 			if(filterResult.isShowOnlySelf()) predicate = audience -> (!(audience instanceof ServerPlayer) || ((ServerPlayer) audience).uniqueId().equals(player.uniqueId()));
 		}
+		String key = (isPlayer ? player.uniqueId().toString() : locatable.blockPosition().toString()) + TextUtils.clearDecorations(message);
+		if(map.containsKey(key)) map.remove(key);
+		map.put(key, new MessageSettings(chanel, predicate));
 		if(isPlayer) chatSpy(predicate, chanel, player, message, event.originalMessage());
 		event.setMessage(message);
-		if(!TextUtils.clearDecorations(message).isEmpty()) {
-			String stringMessage = TextUtils.serializeLegacy(message);
-			String key = (isPlayer ? player.uniqueId().toString() : locatable.blockPosition().toString()) + TextUtils.clearDecorations(message);
-			map.put(key, chanel);
-			Sponge.asyncScheduler().submit(Task.builder().plugin(plugin.getPluginContainer()).delay(Ticks.of(5)).execute(() -> {if(map.containsKey(key)) map.remove(key);}).build());
-			if(message.toString().contains("@")) {
-				Sponge.server().onlinePlayers().stream().filter(predicate).filter(p -> (stringMessage.contains("@" + p.name()) && (!isPlayer || !p.name().equals(player.name())))).findFirst().ifPresent(p -> {
-					p.playSound(Sound.sound(plugin.getConfig().getSound(), Sound.Source.VOICE, 100, 50));
-					p.sendMessage(isPlayer ? plugin.getLocales().getText(p.locale(), LocalesPaths.MENTION_BY_PLAYER).replace(ReplaceKeys.PLAYER, player.customName().isPresent() ? player.customName().get().get() : Component.text(player.name())).get() : plugin.getLocales().getComponent(p.locale(), LocalesPaths.MENTION_BY_NOT_PLAYER));
-				});
-			}
-		}
 	}
 
 	@Listener(order = Order.LAST)
@@ -89,17 +82,20 @@ public class ChatListener {
 		boolean isPlayer = locatable instanceof ServerPlayer;
 		ServerPlayer player = isPlayer ? (ServerPlayer) locatable : null;
 		String search = (isPlayer ? player.uniqueId().toString() : locatable.blockPosition().toString()) + TextUtils.clearDecorations(event.message());
-		Chanel chanel = map.containsKey(search) ? map.get(search) : plugin.getConfig().getDefaultChanel();
-		if(map.containsKey(search)) map.remove(search);
-		search = null;
-		if(isPlayer && plugin.getConfig().getAntiSpamSection().isEnable() && antiSpam(player)) {
+		if(!map.containsKey(search)) {
 			event.setCancelled(true);
-			player.sendMessage(plugin.getLocales().getComponent(player.locale(), LocalesPaths.ANTISPAM));
 			return;
 		}
-		event.setChatType(ChatTypes.CUSTOM_CHAT);
-		event.setSender(isPlayer ? chanel.getChatFormatter().buildFormatForPlayer(player) : chanel.getChatFormatter().buildFormatForCommandBlock(chanel, locatable.serverLocation().world()));
-		event.setFilter(getReceiversFilter(chanel, locatable));
+		MessageSettings messageSettings = map.get(search);
+		map.remove(search);
+		search = null;
+		if(event.chatType().location().asString().equals("minecraft:chat")) {
+			event.setSender(isPlayer ? messageSettings.chanel.getChatFormatter().buildFormatForPlayer(player) : messageSettings.chanel.getChatFormatter().buildFormatForCommandBlock(messageSettings.chanel, locatable.serverLocation().world()));
+			event.setChatType(ChatTypes.CUSTOM_CHAT);
+			event.setFilter(getReceiversFilter(messageSettings.chanel, locatable));
+			if(!TextUtils.clearDecorations(event.message()).isEmpty()) mention(TextUtils.serializeLegacy(event.message()), messageSettings.predicate, isPlayer, player);
+		}
+		messageSettings = null;
 	}
 
 	private void chatSpy(Predicate<ServerPlayer> predicate, Chanel chanel, ServerPlayer player, Component message, Component original) {
@@ -142,6 +138,31 @@ public class ChatListener {
 			} else return true;
 		}
 		return false;
+	}
+
+	private void mention(String message, Predicate<ServerPlayer> predicate, boolean isPlayer, ServerPlayer player) {
+		if(message.contains("@")) {
+			Sponge.server().onlinePlayers().stream().filter(predicate).filter(p -> (message.contains("@" + p.name()) && (!isPlayer || !p.name().equals(player.name())))).findFirst().ifPresent(p -> {
+				p.playSound(Sound.sound(plugin.getConfig().getSound(), Sound.Source.VOICE, 100, 50));
+				p.sendMessage(isPlayer ? plugin.getLocales().getText(p.locale(), LocalesPaths.MENTION_BY_PLAYER).replace(ReplaceKeys.PLAYER, player.customName().isPresent() ? player.customName().get().get() : Component.text(player.name())).get() : plugin.getLocales().getComponent(p.locale(), LocalesPaths.MENTION_BY_NOT_PLAYER));
+			});
+		}
+	}
+
+	private class MessageSettings {
+
+		private Chanel chanel;
+		private Predicate<ServerPlayer> predicate;
+		private long time = System.currentTimeMillis();
+		MessageSettings(Chanel chanel, Predicate<ServerPlayer> predicate) {
+			this.chanel = chanel;
+			this.predicate = predicate;
+		}
+
+		private boolean isExpired() {
+			return time + 10000 < System.currentTimeMillis();
+		}
+
 	}
 
 }
