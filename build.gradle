@@ -41,8 +41,8 @@ sponge {
 		version("1.0")
 	}
 	license("GPL-3.0")
-	plugin("chatmanager") {
-		displayName(project.name.capitalize())
+	plugin(project.name.toLowerCase()) {
+		displayName(project.name)
 		version("${project.version}")
 		entrypoint("${project.group}.${rootProject.name}")
 		description("A plugin for flexible chat settings.")
