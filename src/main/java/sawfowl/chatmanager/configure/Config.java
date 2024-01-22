@@ -33,7 +33,7 @@ public class Config {
 	@Comment("The identifier of the sound the player will hear when mentioned in the chat.")
 	private String mentionSound = "minecraft:block.note_block.guitar";
 	@Setting("Chanels")
-	@Comment("Available placeholders:\n%time% - Message time.\n%chanel% - Chanel prefix.\n%prefix% - Player prefix(Metaperm).\n%rank% - Player rank(Metaperm).\n%player% - Original player name.\n%displayname% - Custom player name.\n%suffix% - Player suffix(Metaperm).\n%world% - Player world or specified world in command.\n%region% - Region in the player's location. Optional support for RegionGuard plugin.\n%message% - Message")
+	@Comment("Available placeholders:\n%time% - Message time.\n%chanel% - Chanel prefix.\n%prefix% - Player prefix(Metaperm).\n%rank% - Player rank(Metaperm).\n%player% - Original player name.\n%displayname% - Custom player name.\n%suffix% - Player suffix(Metaperm).\n%world% - Player world or specified world in command.\n%region% - Region in the player's location. Optional support for RegionGuard plugin.")
 	private List<Chanel> chanels = ChanelTypes.createDefaultChanels();
 	@Setting("Filters")
 	@Comment("There are five types of rules. Each type has its own settings. If the settings are wrong, you may get a missing method or NPE error.\nThe message that needs to be sent to the player is taken from the localization files. The rule specifies only the path to the section with the message. The message sent to the player can be used in any rule if you need it.\nYou can see other examples of rules by following this link to the page of the plugin from which I borrowed the idea of filter types - https://www.spigotmc.org/resources/bungeechatfilter.20596/")
