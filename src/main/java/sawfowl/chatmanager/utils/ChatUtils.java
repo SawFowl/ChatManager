@@ -8,6 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.living.player.server.ServerPlayer;
+import org.spongepowered.api.item.ItemTypes;
+import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.service.ban.Ban;
 import org.spongepowered.api.service.ban.BanService;
 import org.spongepowered.api.world.server.ServerWorld;
@@ -30,7 +32,6 @@ import sawfowl.chatmanager.data.filters.rules.PunishRule;
 import sawfowl.chatmanager.data.filters.rules.ReplaceRule;
 import sawfowl.localeapi.api.Text;
 import sawfowl.localeapi.api.TextUtils;
-import sawfowl.localeapi.api.serializetools.itemstack.SerializedItemStack;
 
 public class ChatUtils {
 
@@ -70,8 +71,8 @@ public class ChatUtils {
 
 	public static Component showItem(ServerPlayer player, Component component) {
 		if(!component.toString().contains(ReplaceKeys.LINK_ITEM)) return component;
-		SerializedItemStack itemStack = new SerializedItemStack(player.itemInHand(HandTypes.MAIN_HAND));
-		return replace(component, ReplaceKeys.LINK_ITEM, itemStack.getItemStack().asComponent().hoverEvent(HoverEvent.showItem(itemStack.getItemKey(), itemStack.getQuantity())));
+		ItemStack itemStack = player.itemInHand(HandTypes.MAIN_HAND);
+		return replace(component, ReplaceKeys.LINK_ITEM, itemStack.asComponent().hoverEvent(HoverEvent.showItem(ItemTypes.registry().valueKey(itemStack.type()), itemStack.quantity())));
 	}
 
 	public static final Component removeFirstSymbol(Component component, char symbol) {
