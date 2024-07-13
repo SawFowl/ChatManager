@@ -1,7 +1,5 @@
 package sawfowl.chatmanager.listeners;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
@@ -12,7 +10,6 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.message.PlayerChatEvent;
-import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.world.Locatable;
 
 import net.kyori.adventure.sound.Sound;
@@ -33,16 +30,17 @@ public class ChatListener {
 
 	private final ChatManager plugin;
 	private final boolean regions;
-	private Map<String, MessageSettings> map = new HashMap<>();
 	public ChatListener(ChatManager plugin, boolean regions) {
 		this.plugin = plugin;
 		this.regions = regions;
-		Sponge.asyncScheduler().submit(Task.builder().plugin(plugin.getPluginContainer()).interval(10, TimeUnit.SECONDS).execute(() -> map.entrySet().removeIf(entry -> entry.getValue().isExpired())).build());
 	}
 
-
 	@Listener(order = Order.LAST)
-	public void onMessage(PlayerChatEvent.Decorate event, @First Locatable locatable) {
+	public void onMessage(PlayerChatEvent.Submit event, @First Locatable locatable) {
+		if(TextUtils.clearDecorations(event.message()).isEmpty()) {
+			event.setCancelled(true);
+			return;
+		}
 		Chanel chanel = plugin.getConfig().getChanel(ChatUtils.firstSymbol(event.message()));
 		boolean isPlayer = locatable instanceof ServerPlayer;
 		ServerPlayer player = isPlayer ? (ServerPlayer) locatable : null;
@@ -66,36 +64,14 @@ public class ChatListener {
 			message = ChatUtils.showItem(player, message);
 			if(filterResult.isShowOnlySelf()) predicate = audience -> (!(audience instanceof ServerPlayer) || ((ServerPlayer) audience).uniqueId().equals(player.uniqueId()));
 		}
-		String key = (isPlayer ? player.uniqueId().toString() : locatable.blockPosition().toString()) + TextUtils.clearDecorations(message);
-		if(map.containsKey(key)) map.remove(key);
-		map.put(key, new MessageSettings(chanel, predicate));
-		if(isPlayer) chatSpy(predicate, chanel, player, message, event.originalMessage());
 		event.setMessage(message);
-	}
-
-	@Listener(order = Order.LAST)
-	public void onMessage(PlayerChatEvent.Submit event, @First Locatable locatable) {
-		if(TextUtils.clearDecorations(event.message()).isEmpty()) {
-			event.setCancelled(true);
-			return;
-		}
-		boolean isPlayer = locatable instanceof ServerPlayer;
-		ServerPlayer player = isPlayer ? (ServerPlayer) locatable : null;
-		String search = (isPlayer ? player.uniqueId().toString() : locatable.blockPosition().toString()) + TextUtils.clearDecorations(event.message());
-		if(!map.containsKey(search)) {
-			event.setCancelled(true);
-			return;
-		}
-		MessageSettings messageSettings = map.get(search);
-		map.remove(search);
-		search = null;
 		if(event.chatType().location().asString().equals("minecraft:chat")) {
-			event.setSender(isPlayer ? messageSettings.chanel.getChatFormatter().buildFormatForPlayer(player) : messageSettings.chanel.getChatFormatter().buildFormatForCommandBlock(messageSettings.chanel, locatable.serverLocation().world()));
+			event.setSender(isPlayer ? chanel.getChatFormatter().buildFormatForPlayer(player) : chanel.getChatFormatter().buildFormatForCommandBlock(chanel, locatable.serverLocation().world()));
 			event.setChatType(ChatTypes.CUSTOM_CHAT);
-			event.setFilter(getReceiversFilter(messageSettings.chanel, locatable));
-			if(!TextUtils.clearDecorations(event.message()).isEmpty()) mention(TextUtils.serializeLegacy(event.message()), messageSettings.predicate, isPlayer, player);
+			event.setFilter(getReceiversFilter(chanel, locatable));
+			if(!TextUtils.clearDecorations(event.message()).isEmpty()) mention(TextUtils.serializeLegacy(event.message()), predicate, isPlayer, player);
 		}
-		messageSettings = null;
+		if(isPlayer) chatSpy(predicate, chanel, player, message, event.originalMessage());
 	}
 
 	private void chatSpy(Predicate<ServerPlayer> predicate, Chanel chanel, ServerPlayer player, Component message, Component original) {
@@ -147,22 +123,6 @@ public class ChatListener {
 				p.sendMessage(isPlayer ? plugin.getLocales().getText(p.locale(), LocalesPaths.MENTION_BY_PLAYER).replace(ReplaceKeys.PLAYER, player.customName().isPresent() ? player.customName().get().get() : Component.text(player.name())).get() : plugin.getLocales().getComponent(p.locale(), LocalesPaths.MENTION_BY_NOT_PLAYER));
 			});
 		}
-	}
-
-	private class MessageSettings {
-
-		private Chanel chanel;
-		private Predicate<ServerPlayer> predicate;
-		private long time = System.currentTimeMillis();
-		MessageSettings(Chanel chanel, Predicate<ServerPlayer> predicate) {
-			this.chanel = chanel;
-			this.predicate = predicate;
-		}
-
-		private boolean isExpired() {
-			return time + 10000 < System.currentTimeMillis();
-		}
-
 	}
 
 }
