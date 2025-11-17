@@ -17,9 +17,9 @@ repositories {
 		name = "Sponge"
 		url = "https://repo.spongepowered.org/repository/maven-public"
 	}
-	maven { 
-		name = "JitPack"
-		url 'https://jitpack.io' 
+	maven {
+		name = "AspectRepo"
+		url 'https://maven.aspect-realms.ru/repository/maven-public/'
 	}
 }
 
