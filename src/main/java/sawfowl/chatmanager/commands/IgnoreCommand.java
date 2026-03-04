@@ -9,8 +9,6 @@ import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 
 import sawfowl.chatmanager.ChatManager;
 import sawfowl.chatmanager.Permissions;
-import sawfowl.chatmanager.configure.LocalesPaths;
-import sawfowl.chatmanager.configure.ReplaceKeys;
 
 public class IgnoreCommand extends AbstractCommand {
 
@@ -25,8 +23,8 @@ public class IgnoreCommand extends AbstractCommand {
 		ServerPlayer player = context.one(CommandParameters.PLAYER).get();
 		if(executor.uniqueId().equals(player.uniqueId())) exception(toText("Нельзя игнорировать себя."));
 		if(plugin.getIgnoresConfig().switchIgnore(executor, player)) {
-			executor.sendMessage(plugin.getLocales().getText(executor.locale(), LocalesPaths.IGNORED).replace(ReplaceKeys.PLAYER, player.name()).get());
-		} else executor.sendMessage(plugin.getLocales().getText(executor.locale(), LocalesPaths.NOT_IGNORED).replace(ReplaceKeys.PLAYER, player.name()).get());
+			executor.sendMessage(plugin.getLocales().getAsReferenced(executor).getCommands().getIgnore().getIgnored(player));
+		} else executor.sendMessage(plugin.getLocales().getAsReferenced(executor).getCommands().getIgnore().getNotIgnored(player));
 		plugin.updateIgnores();
 		return success();
 	}

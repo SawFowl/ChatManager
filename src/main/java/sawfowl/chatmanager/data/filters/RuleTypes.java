@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import sawfowl.chatmanager.data.filters.rules.FilterRule;
-import sawfowl.chatmanager.configure.LocalesPaths;
 import sawfowl.chatmanager.data.filters.rules.CommandRule;
 import sawfowl.chatmanager.data.filters.rules.PunishRule;
 import sawfowl.chatmanager.data.filters.rules.ReplaceRule;
@@ -77,7 +76,7 @@ public enum RuleTypes {
 
 		@Override
 		ChatFilter createDefaultFilter() {
-			return new ChatFilter(new PunishRule(true, false), PUNISH, "(?i)(f+u+c+k+|f+u+k+|f+v+c+k+|f+u+q+)", LocalesPaths.NOEXPRESSIONS);
+			return new ChatFilter(new PunishRule(true, false), PUNISH, "(?i)(f+u+c+k+|f+u+k+|f+v+c+k+|f+u+q+)", new String[] {"RulesMessages", "NoExpressions"});
 		}
 		
 	},

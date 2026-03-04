@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "sawfowl.chatmanager"
-version = "${major}.${minor}.${patch}-${api}-${suffix}"
+version = "${major}.${minor}.${patch}-${suffix}-${api}"
 
 java {
 	sourceCompatibility = targetCompatibility = JavaVersion.VERSION_21
@@ -17,10 +17,10 @@ repositories {
 		name = "Sponge"
 		url = "https://repo.spongepowered.org/repository/maven-public"
 	}
-	maven { 
-		name = "JitPack"
-		url 'https://jitpack.io' 
-	}
+	//maven {
+	//	name = "JitPack"
+	//	url 'https://jitpack.io'
+	//}
 }
 
 tasks.withType(JavaCompile) {
@@ -29,9 +29,9 @@ tasks.withType(JavaCompile) {
 
 dependencies {
 	implementation "org.spongepowered:spongeapi:${api}"
-	implementation "com.github.SawFowl:LocaleAPI:${localeapi}"
-	implementation "com.github.SawFowl:RegionGuard:${regionguard}"
-	//implementation fileTree(dir: 'libs', include: '*.jar')
+	//implementation "com.github.SawFowl:LocaleAPI:${localeapi}"
+	//implementation "com.github.SawFowl:RegionGuard:${regionguard}"
+	implementation fileTree(dir: 'libs', include: '*.jar')
 }
 
 sponge {

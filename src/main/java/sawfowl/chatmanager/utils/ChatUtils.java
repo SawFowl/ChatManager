@@ -21,8 +21,8 @@ import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.event.HoverEvent;
 
 import sawfowl.chatmanager.Permissions;
-import sawfowl.chatmanager.configure.Locales;
 import sawfowl.chatmanager.configure.ReplaceKeys;
+import sawfowl.chatmanager.configure.translation.PluginLocale;
 import sawfowl.chatmanager.data.Chanel;
 import sawfowl.chatmanager.data.Ignores;
 import sawfowl.chatmanager.data.filters.ChatFilter;
@@ -30,6 +30,7 @@ import sawfowl.chatmanager.data.filters.RuleTypes;
 import sawfowl.chatmanager.data.filters.rules.CommandRule;
 import sawfowl.chatmanager.data.filters.rules.PunishRule;
 import sawfowl.chatmanager.data.filters.rules.ReplaceRule;
+import sawfowl.localeapi.api.LocalesList;
 import sawfowl.localeapi.api.Text;
 import sawfowl.localeapi.api.TextUtils;
 
@@ -81,7 +82,7 @@ public class ChatUtils {
 		return component.replaceText(TextReplacementConfig.builder().match(String.valueOf(symbol)).replacement(Component.empty()).times(1).build());
 	}
 
-	public static FilterResult getFilterResult(Locales locales, PluginContainer container, ServerPlayer player, Component message, List<ChatFilter> filters, Chanel chanel) {
+	public static FilterResult getFilterResult(LocalesList<PluginLocale> locales, PluginContainer container, ServerPlayer player, Component message, List<ChatFilter> filters, Chanel chanel) {
 		FilterResult result = new FilterResult();
 		Component toReturn = message;
 		for(ChatFilter filter : filters) {
@@ -91,7 +92,7 @@ public class ChatUtils {
 					toReturn = TextUtils.deserializeLegacy(anticaps.replace(anticaps.charAt(0), Character.toUpperCase(anticaps.charAt(0))));
 				}
 				if(filter.isRegex(toReturn)) {
-					Optional<Component> send = filter.getSendMessage().isPresent() && !locales.getPluginLocale(org.spongepowered.api.util.locale.Locales.DEFAULT).getLocaleNode(filter.getSendMessage().get()).virtual() ? Optional.ofNullable(locales.getComponent(player.locale(), filter.getSendMessage().get())) : Optional.empty();
+					Optional<Component> send = filter.getSendMessage().isPresent() && !locales.getSimple(org.spongepowered.api.util.locale.Locales.DEFAULT).getRootNode().node(filter.getSendMessage().get()).virtual() ? Optional.ofNullable(locales.getSimple(player.locale()).getComponent(filter.getSendMessage().get())) : Optional.empty();
 					if(filter.getRuleType() == RuleTypes.SHOW_ONLY_SELF) {
 						result.showOnlySelf = true;
 						break;
@@ -129,7 +130,7 @@ public class ChatUtils {
 						result.dontSendMessage = true;
 						break;
 					}
-					if(send.isPresent() && player.isOnline()) player.sendMessage(locales.getComponent(player.locale(), filter.getSendMessage().get()));
+					if(send.isPresent() && player.isOnline()) player.sendMessage(locales.getSimple(player.locale()).getComponent(filter.getSendMessage().get()));
 				}
 			}
 		}

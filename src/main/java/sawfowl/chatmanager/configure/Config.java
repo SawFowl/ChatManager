@@ -23,9 +23,6 @@ public class Config {
 	public Config() {}
 	private final Chanel defaultChanel = new Chanel(ChanelTypes.LOCAL, 100).setDefault(true);
 
-	@Setting("JsonLocales")
-	@Comment("If true, then the localization files will use the json string format, which allows you to add functionality to the plugin's messages.\nIf false, then regular strings with formatting using `&` character will be used.\nAfter changing this parameter, you need to delete the localization files and restart the server.")
-	private boolean jsonLocales = true;
 	@Setting("Antispam")
 	@Comment("Anti-spam settings.")
 	private AntiSpamSection antiSpamSection = new AntiSpamSection();
@@ -44,11 +41,6 @@ public class Config {
 	@Setting("BlockCommands")
 	@Comment("A list of commands that a player will not be able to apply to another player if he is ignored.")
 	private List<String> blockCommands = Arrays.asList("tell", "say", "m", "msg");
-	
-
-	public boolean isJsonLocales() {
-		return jsonLocales;
-	}
 
 	public List<Chanel> getChanels() {
 		return chanels;

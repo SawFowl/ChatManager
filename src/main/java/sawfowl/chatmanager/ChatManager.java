@@ -1,5 +1,6 @@
 package sawfowl.chatmanager;
 
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,12 +14,10 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.Command;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.lifecycle.ConstructPluginEvent;
 import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
 import org.spongepowered.api.scheduler.Task;
-import org.spongepowered.configurate.CommentedConfigurationNode;
-import org.spongepowered.configurate.ConfigurateException;
-import org.spongepowered.configurate.reference.ConfigurationReference;
-import org.spongepowered.configurate.reference.ValueReference;
+import org.spongepowered.api.util.locale.Locales;
 import org.spongepowered.plugin.PluginContainer;
 import org.spongepowered.plugin.builtin.jvm.Plugin;
 
@@ -31,15 +30,18 @@ import sawfowl.chatmanager.commands.LocalChanelCommand;
 import sawfowl.chatmanager.commands.ReloadCommand;
 import sawfowl.chatmanager.commands.WorldChanelCommand;
 import sawfowl.chatmanager.configure.Config;
-import sawfowl.chatmanager.configure.Locales;
+import sawfowl.chatmanager.configure.translation.PluginLocale;
 import sawfowl.chatmanager.data.ChanelTypes;
 import sawfowl.chatmanager.data.Ignores;
 import sawfowl.chatmanager.listeners.ChatListener;
 import sawfowl.chatmanager.listeners.CommandListener;
 import sawfowl.chatmanager.utils.ChatFormatter;
 import sawfowl.chatmanager.utils.RegionService;
-import sawfowl.localeapi.api.event.LocaleServiseEvent;
-import sawfowl.localeapi.api.serializetools.SerializeOptions;
+import sawfowl.localeapi.api.ConfigTypes;
+import sawfowl.localeapi.api.LocaleService;
+import sawfowl.localeapi.api.LocalesList;
+import sawfowl.localeapi.api.config.ReferencedConfig;
+import sawfowl.localeapi.api.serializetools.ItemStackSerializerType;
 
 @Plugin("chatmanager")
 public class ChatManager {
@@ -47,14 +49,12 @@ public class ChatManager {
 	private static ChatManager instance;
 	private PluginContainer pluginContainer;
 	private Logger logger;
-	private Locales locales;
 	private Path configDir;
+	private LocalesList<PluginLocale> locales;
 	private RegionService regionService;
 
-	private ConfigurationReference<CommentedConfigurationNode> configurationReference;
-	private ValueReference<Config, CommentedConfigurationNode> config;
-	private ConfigurationReference<CommentedConfigurationNode> configurationReferenceIgnores;
-	private ValueReference<Ignores, CommentedConfigurationNode> ignoresConfig;
+	private ReferencedConfig<Config> config;
+	private ReferencedConfig<Ignores> ignores;
 	private Map<UUID, Long> antispamMap = new HashMap<>();
 
 	@Inject
@@ -63,34 +63,19 @@ public class ChatManager {
 		logger = LogManager.getLogger("ChatManager");
 		this.pluginContainer = pluginContainer;
 		configDir = configDirectory;
+		locales = LocaleService.getInstance().createLocales(pluginContainer, PluginLocale.class);
+		if(!locales.contains(Locales.DEFAULT)) locales.createReferencedTranslation(ConfigTypes.HOCON, Locales.DEFAULT, PluginLocale.class);
+		if(!locales.contains(Locales.RU_RU)) locales.createReferencedTranslation(ConfigTypes.HOCON, Locales.RU_RU, PluginLocale.createRu());
+		config = ReferencedConfig.create(pluginContainer, configDirectory, "Config", ConfigTypes.HOCON, ItemStackSerializerType.JSON, null, Config.class);
+		ignores = ReferencedConfig.create(pluginContainer, configDirectory, "Ignores", ConfigTypes.HOCON, ItemStackSerializerType.JSON, null, Ignores.class);
 	}
 
 	@Listener
-	public void onPostLocaleAPI(LocaleServiseEvent.Construct event) {
-		try {
-			Path defaultConfig = configDir.resolve("Config.conf");
-			configurationReference = SerializeOptions.createHoconConfigurationLoader(2).path(defaultConfig).build().loadToReference();
-			this.config = configurationReference.referenceTo(Config.class);
-			if(!defaultConfig.toFile().exists()) {
-				configurationReference.save();
-			} else configurationReference.load();
-			Path ignoresConfig = configDir.resolve("Ignores.conf");
-			configurationReferenceIgnores = SerializeOptions.createHoconConfigurationLoader(2).path(configDir.resolve("Ignores.conf")).build().loadToReference();
-			this.ignoresConfig = configurationReferenceIgnores.referenceTo(Ignores.class);
-			if(!ignoresConfig.toFile().exists()) {
-				configurationReferenceIgnores.save();
-			} configurationReferenceIgnores.load();
-		} catch (ConfigurateException e) {
-			logger.error(e.getLocalizedMessage());
-		}
-		locales = new Locales(event.getLocaleService(), getConfig().isJsonLocales());
+	public void onConstruct(ConstructPluginEvent event) {
 		boolean regions = Sponge.pluginManager().plugin("regionguard").isPresent();
-		if(regions) {
-			regionService = new RegionService();
-			Sponge.eventManager().registerListeners(pluginContainer, regionService);
-		}
-		Sponge.eventManager().registerListeners(pluginContainer, new ChatListener(instance, regions));
-		Sponge.eventManager().registerListeners(pluginContainer, new CommandListener(instance));
+		if(regions) regionService = new RegionService();
+		Sponge.eventManager().registerListeners(pluginContainer, new ChatListener(instance, regions), MethodHandles.lookup());
+		Sponge.eventManager().registerListeners(pluginContainer, new CommandListener(instance), MethodHandles.lookup());
 		Sponge.asyncScheduler().submit(Task.builder().plugin(pluginContainer).interval(1, TimeUnit.MINUTES).execute(() -> {
 			antispamMap.entrySet().removeIf(entry -> (TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - entry.getValue() > getConfig().getAntiSpamSection().getDelay()));
 		}).build());
@@ -118,18 +103,12 @@ public class ChatManager {
 	}
 
 	public void reload() {
-		try {
-			configurationReference.load();
-			config = configurationReference.referenceTo(Config.class);
-			configurationReferenceIgnores = SerializeOptions.createHoconConfigurationLoader(2).path(configDir.resolve("Ignores.conf")).build().loadToReference();
-			this.ignoresConfig = configurationReferenceIgnores.referenceTo(Ignores.class);
-		} catch (ConfigurateException e) {
-			logger.error(e.getLocalizedMessage());
-		}
+		config.load();
+		ignores.load();
 	}
 
 	public void updateIgnores() {
-		ignoresConfig.setAndSave(getIgnoresConfig());
+		ignores.save();
 	}
 
 	public static ChatManager getInstance() {
@@ -148,7 +127,7 @@ public class ChatManager {
 		return logger;
 	}
 
-	public Locales getLocales() {
+	public LocalesList<PluginLocale> getLocales() {
 		return locales;
 	}
 
@@ -157,7 +136,7 @@ public class ChatManager {
 	}
 
 	public Ignores getIgnoresConfig() {
-		return ignoresConfig.get();
+		return ignores.get();
 	}
 
 	public RegionService getRegionService() {

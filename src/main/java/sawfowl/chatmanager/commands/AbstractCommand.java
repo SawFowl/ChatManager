@@ -28,10 +28,9 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+
 import sawfowl.chatmanager.ChatManager;
 import sawfowl.chatmanager.Permissions;
-import sawfowl.chatmanager.configure.LocalesPaths;
-import sawfowl.chatmanager.configure.ReplaceKeys;
 import sawfowl.chatmanager.data.Chanel;
 import sawfowl.chatmanager.utils.ChatUtils;
 import sawfowl.localeapi.api.Text;
@@ -86,7 +85,7 @@ public abstract class AbstractCommand implements CommandExecutor {
 			Component sourceName = isPlayer ? ((ServerPlayer) audience).customName().map(name -> name.get()).orElse(Component.text(((ServerPlayer) audience).name())) : audience instanceof Nameable ? Component.text(((Nameable) audience).name()) : Component.text("Server");
 			Sponge.server().onlinePlayers().stream().filter(predicate).filter(p -> ((stringMessage.contains("@" + p.name()) || (p.customName().isPresent() && stringMessage.contains("@" + TextUtils.clearDecorations(sourceName)))) && (!isPlayer || (!p.customName().filter(name -> TextUtils.clearDecorations(name.get()).equals(TextUtils.clearDecorations(sourceName))).isPresent() && !p.name().equals(TextUtils.clearDecorations(sourceName)))))).findFirst().ifPresent(p -> {
 				p.playSound(Sound.sound(plugin.getConfig().getSound(), Sound.Source.VOICE, 100, 50));
-				p.sendMessage(plugin.getLocales().getText(p.locale(), isPlayer ? LocalesPaths.MENTION_BY_PLAYER : LocalesPaths.MENTION_BY_NOT_PLAYER).replace(ReplaceKeys.PLAYER, sourceName).get());
+				p.sendMessage(plugin.getLocales().getAsReferenced(p).getMention().getMessage(isPlayer, sourceName));
 			});
 		}
 	}
@@ -100,7 +99,7 @@ public abstract class AbstractCommand implements CommandExecutor {
 		}
 		if(audience instanceof CommandBlock) return chanel.getChatFormatter().buildFormatForCommandBlock(chanel, world).append(Component.text(" ")).append(text);
 		if(audience instanceof SystemSubject) return chanel.getChatFormatter().buildFormatForConsole(chanel, world, text);
-		throw exception(plugin.getLocales().getText(locale, LocalesPaths.UNKNOWN_SENDER).replace(ReplaceKeys.SENDER, audience.getClass().getName()));
+		throw exception(plugin.getLocales().getAsReferenced(locale).getCommands().getExceptions().getUnknownSender(audience.getClass().getName()));
 	}
 
 	void sendMessage(Component message, Component original, Predicate<ServerPlayer> filter, boolean isPlayer, Audience player) {

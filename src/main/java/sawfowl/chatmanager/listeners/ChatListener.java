@@ -19,8 +19,6 @@ import net.kyori.adventure.text.format.TextColor;
 
 import sawfowl.chatmanager.ChatManager;
 import sawfowl.chatmanager.Permissions;
-import sawfowl.chatmanager.configure.LocalesPaths;
-import sawfowl.chatmanager.configure.ReplaceKeys;
 import sawfowl.chatmanager.data.Chanel;
 import sawfowl.chatmanager.utils.ChatUtils;
 import sawfowl.chatmanager.utils.FilterResult;
@@ -57,7 +55,7 @@ public class ChatListener {
 			}
 			if(isPlayer && plugin.getConfig().getAntiSpamSection().isEnable() && antiSpam(player)) {
 				message = Component.empty();
-				player.sendMessage(plugin.getLocales().getComponent(player.locale(), LocalesPaths.ANTISPAM));
+				player.sendMessage(plugin.getLocales().getAsReferenced(player).getAntiSpam());
 				return;
 			}
 			message = filterResult.getMessage().get();
@@ -120,7 +118,7 @@ public class ChatListener {
 		if(message.contains("@")) {
 			Sponge.server().onlinePlayers().stream().filter(predicate).filter(p -> (message.contains("@" + p.name()) && (!isPlayer || !p.name().equals(player.name())))).findFirst().ifPresent(p -> {
 				p.playSound(Sound.sound(plugin.getConfig().getSound(), Sound.Source.VOICE, 100, 50));
-				p.sendMessage(isPlayer ? plugin.getLocales().getText(p.locale(), LocalesPaths.MENTION_BY_PLAYER).replace(ReplaceKeys.PLAYER, player.customName().isPresent() ? player.customName().get().get() : Component.text(player.name())).get() : plugin.getLocales().getComponent(p.locale(), LocalesPaths.MENTION_BY_NOT_PLAYER));
+				p.sendMessage(plugin.getLocales().getAsReferenced(p).getMention().getMessage(isPlayer, !isPlayer ? Component.empty() : player.customName().isPresent() ? player.customName().get().get() : Component.text(player.name())));
 			});
 		}
 	}
