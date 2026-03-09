@@ -26,8 +26,6 @@ import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import sawfowl.chatmanager.ChatManager;
 import sawfowl.chatmanager.Permissions;
@@ -70,12 +68,8 @@ public abstract class AbstractCommand implements CommandExecutor {
 		return exception(text.get());
 	}
 
-	Component toText(String string) {
-		try {
-			return GsonComponentSerializer.gson().deserialize(string);
-		} catch (Exception e) {
-			return LegacyComponentSerializer.legacyAmpersand().deserialize(string);
-		}
+	Component toText(CommandCause cause, String string) {
+		return cause.hasPermission(Permissions.STYLE) ? TextUtils.deserialize(string) : TextUtils.removeDecorations(TextUtils.deserialize(string));
 	}
 
 	void playerMention(Component component, Audience audience, Predicate<ServerPlayer> predicate) {
@@ -94,7 +88,7 @@ public abstract class AbstractCommand implements CommandExecutor {
 		Locale locale = audience instanceof LocaleSource ? ((LocaleSource) audience).locale() : Locales.DEFAULT;
 		if(audience instanceof ServerPlayer) {
 			ServerPlayer player = (ServerPlayer) audience;
-			Component message = ChatUtils.showItem(player, !player.hasPermission(Permissions.STYLE) ? toText(TextUtils.clearDecorations(text)) : text);
+			Component message = ChatUtils.showItem(player, !player.hasPermission(Permissions.STYLE) ? toText(cause, TextUtils.clearDecorations(text)) : text);
 			return chanel.getChatFormatter().buildFormatForPlayer(player).append(message);
 		}
 		if(audience instanceof CommandBlock) return chanel.getChatFormatter().buildFormatForCommandBlock(chanel, world).append(Component.text(" ")).append(text);

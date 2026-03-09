@@ -4,6 +4,7 @@ import org.spongepowered.api.command.Command.Parameterized;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.exception.CommandException;
 import org.spongepowered.api.command.parameter.CommandContext;
+import org.spongepowered.api.util.locale.LocaleSource;
 
 import sawfowl.chatmanager.ChatManager;
 import sawfowl.chatmanager.Permissions;
@@ -17,7 +18,7 @@ public class ReloadCommand extends AbstractCommand {
 	@Override
 	public CommandResult execute(CommandContext context) throws CommandException {
 		plugin.reload();
-		context.cause().audience().sendMessage(toText("Плагин перезагружен. Команды для каналов чата могут быть изменены только при полной перезагрузке сервера."));
+		context.cause().audience().sendMessage(plugin.getLocales().getAsReferenced(context.subject() instanceof LocaleSource localeSource ? localeSource.locale() : plugin.getLocales().getSystemOrDefaultLocale()).getCommands().getReload());
 		return success();
 	}
 

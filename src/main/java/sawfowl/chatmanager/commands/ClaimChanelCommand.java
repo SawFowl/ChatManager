@@ -34,7 +34,7 @@ public class ClaimChanelCommand extends AbstractCommand {
 		if(!context.one(CommandParameters.MESSAGE).isPresent()) exception(plugin.getLocales().getAsReferenced(locale).getCommands().getExceptions().getMessageIsNotPresent());
 		Locatable locatable = (Locatable) audience;
 		Predicate<ServerPlayer> predicate = plugin.getRegionService().getClaimFilterForCommand(locatable, chanel);
-		Component message = toText(context.one(CommandParameters.MESSAGE).get());
+		Component message = toText(context.cause(), context.one(CommandParameters.MESSAGE).get());
 		boolean isPlayer = audience instanceof ServerPlayer;
 		if(isPlayer) {
 			if(plugin.getConfig().getAntiSpamSection().isEnable() && antiSpam((ServerPlayer) audience)) {
@@ -50,7 +50,7 @@ public class ClaimChanelCommand extends AbstractCommand {
 			} else return success();
 		}
 		message = message(context.cause(), audience, locatable.serverLocation().world(), message);
-		sendMessage(message, toText(context.one(CommandParameters.MESSAGE).get()), predicate, isPlayer, audience);
+		sendMessage(message, toText(context.cause(), context.one(CommandParameters.MESSAGE).get()), predicate, isPlayer, audience);
 		playerMention(message, audience, predicate);
 		return success();
 	}

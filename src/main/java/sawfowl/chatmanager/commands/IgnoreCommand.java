@@ -19,9 +19,9 @@ public class IgnoreCommand extends AbstractCommand {
 	@Override
 	public CommandResult execute(CommandContext context) throws CommandException {
 		ServerPlayer executor = (ServerPlayer) context.cause().audience();
-		if(!context.one(CommandParameters.PLAYER).isPresent()) exception(toText("Нужно указать ник игрока. Игрок при этом должен быть онлайн."));
+		if(!context.one(CommandParameters.PLAYER).isPresent()) exception(plugin.getLocales().getAsReferenced(executor).getCommands().getExceptions().getPlayerIsNotPresent());
 		ServerPlayer player = context.one(CommandParameters.PLAYER).get();
-		if(executor.uniqueId().equals(player.uniqueId())) exception(toText("Нельзя игнорировать себя."));
+		if(executor.uniqueId().equals(player.uniqueId())) exception(plugin.getLocales().getAsReferenced(executor).getCommands().getExceptions().getIgnoreSelf());
 		if(plugin.getIgnoresConfig().switchIgnore(executor, player)) {
 			executor.sendMessage(plugin.getLocales().getAsReferenced(executor).getCommands().getIgnore().getIgnored(player));
 		} else executor.sendMessage(plugin.getLocales().getAsReferenced(executor).getCommands().getIgnore().getNotIgnored(player));

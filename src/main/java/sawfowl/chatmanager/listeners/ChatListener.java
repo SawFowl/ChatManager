@@ -47,7 +47,14 @@ public class ChatListener {
 		Predicate<ServerPlayer> predicate = getReceiversFilter(chanel, locatable);
 		if(isPlayer) {
 			predicate = predicate.and(ChatUtils.getNotIgnores(player, plugin.getIgnoresConfig()));
-			if(!player.hasPermission(Permissions.STYLE)) message = Component.text(TextUtils.clearDecorations(message));
+			if(player.hasPermission(Permissions.STYLE)) {
+				if(TextUtils.isLegacyDecor(message.toString())) {
+					message = TextUtils.deserializeLegacy(TextUtils.serializeLegacy(message));
+				} else {
+					String string = TextUtils.serializeLegacy(message);
+					if(string.startsWith("<") && string.endsWith(">")) message = TextUtils.deserializeMiniMessage(string);
+				}
+			} else message = Component.text(TextUtils.clearDecorations(message));
 			FilterResult filterResult = ChatUtils.getFilterResult(plugin.getLocales(), plugin.getPluginContainer(), player, message, plugin.getConfig().getFilters(), chanel);
 			if(filterResult.isDontSendMessage() || !filterResult.getMessage().isPresent()) {
 				message = Component.empty();

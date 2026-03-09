@@ -36,7 +36,7 @@ public class LocalChanelCommand extends AbstractCommand {
 		Locatable locatable = (Locatable) audience;
 		ServerWorld world = locatable.serverLocation().world();
 		Vector3i position = locatable.blockPosition();
-		Component message = toText(context.one(CommandParameters.MESSAGE).get());
+		Component message = toText(context.cause(), context.one(CommandParameters.MESSAGE).get());
 		Predicate<ServerPlayer> predicate = player -> (chanel.hasRecievePermission(player) && player.world().key().equals(world.key()) && player.blockPosition().distanceSquared(position) <= chanel.getRange());
 		boolean isPlayer = audience instanceof ServerPlayer;
 		if(isPlayer) {
@@ -53,7 +53,7 @@ public class LocalChanelCommand extends AbstractCommand {
 			} else return success();
 		}
 		message = message(context.cause(), audience, world, message);
-		sendMessage(message, toText(context.one(CommandParameters.MESSAGE).get()), predicate, isPlayer, audience);
+		sendMessage(message, toText(context.cause(), context.one(CommandParameters.MESSAGE).get()), predicate, isPlayer, audience);
 		playerMention(message, audience, predicate);
 		return success();
 	}
