@@ -38,10 +38,11 @@ import sawfowl.chatmanager.listeners.CommandListener;
 import sawfowl.chatmanager.utils.ChatFormatter;
 import sawfowl.chatmanager.utils.RegionService;
 import sawfowl.localeapi.api.ConfigTypes;
-import sawfowl.localeapi.api.LocaleService;
 import sawfowl.localeapi.api.LocalesList;
 import sawfowl.localeapi.api.config.ReferencedConfig;
 import sawfowl.localeapi.api.serializetools.ItemStackSerializerType;
+import sawfowl.localeapi.api.services.ConfigurationService;
+import sawfowl.localeapi.api.services.LocaleService;
 
 @Plugin("chatmanager")
 public class ChatManager {
@@ -66,8 +67,8 @@ public class ChatManager {
 		locales = LocaleService.getInstance().createLocales(pluginContainer, PluginLocale.class);
 		if(!locales.contains(Locales.DEFAULT)) locales.createReferencedTranslation(ConfigTypes.HOCON, Locales.DEFAULT, PluginLocale.class);
 		if(!locales.contains(Locales.RU_RU)) locales.createReferencedTranslation(ConfigTypes.HOCON, Locales.RU_RU, PluginLocale.createRu());
-		config = ReferencedConfig.create(pluginContainer, configDirectory, "Config", ConfigTypes.HOCON, ItemStackSerializerType.JSON, null, Config.class);
-		ignores = ReferencedConfig.create(pluginContainer, configDirectory, "Ignores", ConfigTypes.HOCON, ItemStackSerializerType.JSON, null, Ignores.class);
+		config = ConfigurationService.getInstance().createReferencedConfig(pluginContainer, Config.class).setPath(configDirectory).setName("Config").setType(ConfigTypes.HOCON).setItemStackSerializerType(ItemStackSerializerType.JSON).build();
+		ignores = ConfigurationService.getInstance().createReferencedConfig(pluginContainer, Ignores.class).setPath(configDirectory).setName("Ignores").setType(ConfigTypes.HOCON).setItemStackSerializerType(ItemStackSerializerType.JSON).build();
 	}
 
 	@Listener
